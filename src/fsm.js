@@ -10,6 +10,7 @@ class FSM {
         this.getStatesArr = [];
         this.undoState = config.initial;
         this.undoIndex = 0;
+        this.errCount = 0;
 
         if (config == null) {
             throw new Error('config isn\'t passed');
@@ -29,18 +30,18 @@ class FSM {
      * @param state
      */
     changeState(state) {
-        if (this.stackOfStates[this.stackOfStates.length - 1] == 'Error' ) {            
-            throw new Error('Error in stackOfStates');
-        } else if (state in this.config.states && state !== this.state) {
-            
-            this.undoState = this.state;
-            
+        if (state in this.config.states) {
             this.stackOfStates.push([state, this.state, null, this.stackOfStates.length + 1]);
             this.state = state;
             this.stackOfStates[this.stackOfStates.length - 2][2] = this.state; // next value for previous value
+
+            for (let i = 0; i < this.undoIndex; i++) {
+                this.stackOfStates.pop();
+            }
+        
+            this.undoIndex = 0;
         } else {
-            this.stackOfStates.push(['Error', this.state, null, this.stackOfStates.length + 1]);
-            throw new Error('hmmm... exception?');
+            throw new Error('Error');
         }
         return this.state;
     }
@@ -49,14 +50,11 @@ class FSM {
      * Changes state according to event transition rules.
      * @param event
      */
-    trigger(event) {
-        if (this.stackOfStates[this.stackOfStates.length - 1][0] == 'Error') {
-            throw new Error('event in current state isn\'t exist');
-        }
-        
+    trigger(event) {        
         for (let key in this.config.states) {
             for (let transitionKey in this.config.states[key].transitions )  {
                 if (event == transitionKey) {
+                    this.errCount++;
                     for (let i = 0; i < this.undoIndex; i++) {
                         this.stackOfStates.pop();
                     }
@@ -67,7 +65,7 @@ class FSM {
                                                 null,
                                                 this.stackOfStates.length + 1
                     ]);
-                    
+
                     if (this.stackOfStates > 1) {
                         this.stackOfStates[this.stackOfStates.length - 2][2] = this.state;
                     }
@@ -76,10 +74,11 @@ class FSM {
                     this.undoState = this.state;
                     return this.state;
                 }
-            } 
-        }
-        
-        throw new Error('event in current state isn\'t exist');    
+            }
+        }      
+        if (this.errCount > 0) {
+            throw new Error('event in current state isn\'t exist');
+        }         
     }
 
     /**
@@ -123,14 +122,10 @@ class FSM {
      * @returns {Boolean}
      */
     undo() {
-        if (this.stackOfStates[this.stackOfStates.length - 1][3] === 1) {
+        if (this.stackOfStates.length === 1 ||
+            this.undoIndex === this.stackOfStates.length - 1) {
             return false;
-        }
-
-        if (this.undoIndex === this.stackOfStates.length - 1) {
-            return false;
-        }
-    
+        }    
         
         this.state = this.stackOfStates[this.stackOfStates.length - this.undoIndex - 2][0];
         this.undoIndex++;
@@ -144,21 +139,22 @@ class FSM {
      * @returns {Boolean}
      */
     redo() {
-        // if (this.undoState === this.config.initial && this.stackOfStates.length == 1) {
-        //     return false;
-        // }
+        if (this.stackOfStates.length === 1 || this.undoIndex == 0) {
+            return false;
+        }
 
-        // this.state = this.stackOfStates[this.stackOfStates.length - this.undoCount];
-        // this.undoState = this.state;
-        // this.undoCount--;
+        this.state = this.stackOfStates[this.stackOfStates.length - this.undoIndex][0];
+        this.undoIndex--;
         
-        // return true;
+        return true;
     }
 
     /**
      * Clears transition history
      */
-    clearHistory() {}
+    clearHistory() {
+        this.stackOfStates = [ ['normal', null, null, 1 ] ];//pattern [data, prev, next, length]
+    }
 }
 
 module.exports = FSM;
