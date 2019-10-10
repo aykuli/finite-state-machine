@@ -1,3 +1,31 @@
+const config = {
+    initial: 'normal',
+    states: {
+        normal: {
+            transitions: {
+                study: 'busy',
+            }
+        },
+        busy: {
+            transitions: {
+                get_tired: 'sleeping',
+                get_hungry: 'hungry',
+            }
+        },
+        hungry: {
+            transitions: {
+                eat: 'normal'
+            },
+        },
+        sleeping: {
+            transitions: {
+                get_hungry: 'hungry',
+                get_up: 'normal',
+            },
+        },
+    }
+};
+
 class FSM {
     /**
      * Creates new FSM instance.
@@ -47,6 +75,7 @@ class FSM {
      * @param event
      */
     trigger(event) {
+        console.log('------------------   trigger  -----------------');
         if (this.stackOfStates[this.stackOfStates.length - 1] == 'Error') {
             throw new Error('event in current state isn\'t exist');
         }
@@ -106,13 +135,17 @@ class FSM {
      * @returns {Boolean}
      */
     undo() {
+        console.log('\n------------------   undo  -----------------');
         if (this.undoState === this.config.initial) {
             return false;
         }
     
         this.state = this.stackOfStates[this.stackOfStates.length - this.undoCount - 2];
+        console.log('this.state = ', this.state);
         this.undoState = this.state;
+        console.log('this.undoState = ', this.undoState);
         this.undoCount++;
+        console.log('this.stackOfStates = ', this.stackOfStates);
 
         return true;
     }
@@ -123,13 +156,19 @@ class FSM {
      * @returns {Boolean}
      */
     redo() {
-        if (this.undoState === this.config.initial && this.undoState.length == 0) {
+        console.log('\n------------------   redo  -----------------');
+        if (this.undoState === this.config.initial && this.undoState.length == 1) {
             return false;
         }
         this.state = this.stackOfStates[this.stackOfStates.length - this.undoCount];
-        this.undoState = this.state;        
+        console.log('this.state = ', this.state);
+        this.undoState = this.state;
+        
+        console.log('this.undoState = ', this.undoState);
         this.undoCount--;
-                
+        
+        console.log('this.stackOfStates = ', this.stackOfStates);
+        
         return true;
     }
 
@@ -139,6 +178,22 @@ class FSM {
     clearHistory() {}
 }
 
-module.exports = FSM;
+console.log('\n-------------------------------------------------------------------------');
 
-/** @Created by Uladzimir Halushka **/
+const student = new FSM(config);
+student.trigger('study');
+console.log('student.getState() =', student.getState()); //.to.equal('busy');
+student.undo();
+student.redo();
+console.log('student.getState() =', student.getState()); //.to.equal('busy');
+
+// student.trigger('get_tired');
+// student.trigger('get_hungry');
+
+// student.undo();
+// student.undo();
+
+// student.redo();
+// student.redo();
+
+// console.log('student.getState() =', student.getState()); //.to.equal('hungry');
