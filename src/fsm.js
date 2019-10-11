@@ -106,7 +106,6 @@ class FSM {
   reset() {
     this.state = this.config.initial;
     this.stackOfStates = [["normal", null, null, 1]]; //pattern [data, prev, next, length]
-    // this.undoState = this.state;
   }
 
   /**
